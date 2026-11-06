@@ -1,8 +1,8 @@
 <div align="center">
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/dsh-plugin-tools-flow-dark.svg">
-  <img src="docs/assets/dsh-plugin-tools-flow-light.svg" width="100%" alt="dsh-plugin-tools 工作流：dsh-tools list 查工具、dsh-tools doctor 查环境、dsh-tools install 打印 npm i -g 命令、dsh-tools update 打印 @latest 更新命令，全部由你手动执行">
+  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/dsh-plugin-tools-hero-zh-dark.webp">
+  <img src="docs/assets/dsh-plugin-tools-hero-zh-light.webp" width="100%" alt="dsh-plugin-tools：九个已知工具的一张清单——右侧 3×3 目录网格标出每个工具是否声明了 pkg 与 bin，下方打印 install 命令并盖上 executed: false，命令停在 stdout，不调用 npm">
 </picture>
 
 # dsh-plugin-tools
@@ -34,6 +34,11 @@ npx dsh-plugin-tools list   # 或者不安装，临时跑一次
 ## 它是什么
 
 `dsh-plugin-tools` 是 DSH 插件开发工具链的目录、体检器和安装说明书。`dsh-tools list` 列出九个已知工具的包名、可执行文件名和职责，并标出本机是否已经装好；`dsh-tools doctor` 检查 Node、npm、dsh、git 四项前提；`dsh-tools install <tool>` 与 `dsh-tools update` 把该执行的 `npm install -g` 命令原样打印出来。它不访问 npm registry、不写任何文件，也不审计包、不碰宿主、不评分排名。
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/dsh-plugin-tools-flow-v5-dark.svg">
+  <img src="docs/assets/dsh-plugin-tools-flow-v5-light.svg" width="100%" alt="dsh-plugin-tools 结构：KNOWN[9] 能力矩阵，id / pkg / bin / installed 四列，installed 只可能是 yes / no，或缺 bin 时的 unknown；右侧是 list、doctor、install、update 四种出口与各自退出码，全部汇入 executed: false 的打印边界">
+</picture>
 
 ## 三步上手
 
@@ -215,11 +220,11 @@ node bin/dsh-tools.js list --json                   # 本地直接运行
 | `bin/dsh-tools.js` | npm bin 入口，只把参数转发给 `src/tools.js` |
 | `src/tools.js` | `KNOWN` 清单、参数解析与 list / doctor / install / update 实现 |
 | `test/tools.test.js` | 3 个 `node:test` 用例（list / install / doctor） |
-| `scripts/gen-readme-assets.py` | 生成深浅双版 hero SVG（Python + Pillow） |
-| `docs/assets/` | 生成的 `dsh-plugin-tools-flow-{light,dark}.svg` |
+| `scripts/gen-readme-assets.py` | 生成四张 hero webp 与深浅双版 flow-v5 SVG（Python + Pillow） |
+| `docs/assets/` | 生成的 `dsh-plugin-tools-hero-{zh,en}-{light,dark}.webp` 与 `dsh-plugin-tools-flow-v5-{light,dark}.svg` |
 | `.github/workflows/test.yml` | CI：Node 20 与 24 上跑 `npm test` |
 
-配图由 [`scripts/gen-readme-assets.py`](scripts/gen-readme-assets.py) 程序化生成，可重复执行：`python scripts/gen-readme-assets.py`。脚本启动时探测 CJK 字体，找不到会直接报错退出；输出的两个 SVG 只含命令 token，五语共用同一对文件。
+配图由 [`scripts/gen-readme-assets.py`](scripts/gen-readme-assets.py) 程序化生成，可重复执行：`python scripts/gen-readme-assets.py`。脚本启动时探测 msyh.ttc / msyhbd.ttc / consola.ttf，找不到会直接报错退出；hero 分 zh / en 两版，结构图只含命令 token 与简短中文注记，五语共用同一对文件。
 
 ## 家族与致谢
 

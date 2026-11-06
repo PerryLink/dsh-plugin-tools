@@ -1,8 +1,8 @@
 <div align="center">
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/dsh-plugin-tools-flow-dark.svg">
-  <img src="docs/assets/dsh-plugin-tools-flow-light.svg" width="100%" alt="dsh-plugin-tools वर्कफ़्लो: dsh-tools list टूल खोजता है, dsh-tools doctor एनवायरनमेंट जाँचता है, dsh-tools install npm i -g कमांड छापता है, dsh-tools update @latest कमांड छापता है, और हर कमांड आप खुद चलाते हैं">
+  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/dsh-plugin-tools-hero-en-dark.webp">
+  <img src="docs/assets/dsh-plugin-tools-hero-en-light.webp" width="100%" alt="dsh-plugin-tools: नौ ज्ञात टूल्स की एक सूची — 3×3 कैटलॉग ग्रिड बताता है कि किसने pkg या bin घोषित किया है, और नीचे का install कमांड executed: false की मुहर के साथ stdout पर रुक जाता है, npm को कभी नहीं बुलाता">
 </picture>
 
 # dsh-plugin-tools
@@ -34,6 +34,11 @@ npx dsh-plugin-tools list   # या बिना इंस्टॉल कि�
 ## यह क्या है
 
 `dsh-plugin-tools` DSH प्लगइन डेवलपर टूलचेन का कैटलॉग, प्रीफ़्लाइट चेकर और इंस्टॉल गाइड है। `dsh-tools list` नौ ज्ञात टूल्स में से हर एक का पैकेज नाम, एक्ज़ीक्यूटेबल नाम और भूमिका दिखाता है, और यह भी कि वह इस मशीन पर पहले से इंस्टॉल है या नहीं; `dsh-tools doctor` चार पूर्वापेक्षाएँ जाँचता है — Node, npm, dsh और git; `dsh-tools install <tool>` और `dsh-tools update` चलाने वाला सटीक `npm install -g` कमांड छापते हैं। यह npm रजिस्ट्री से कभी संपर्क नहीं करता, कोई फ़ाइल नहीं लिखता, और न पैकेज ऑडिट करता है, न होस्ट को छूता है, न स्कोर या रैंकिंग बनाता है।
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/dsh-plugin-tools-flow-v5-dark.svg">
+  <img src="docs/assets/dsh-plugin-tools-flow-v5-light.svg" width="100%" alt="dsh-plugin-tools की संरचना: KNOWN[9] क्षमता मैट्रिक्स — id / pkg / bin / installed; installed केवल yes / no हो सकता है, या bin के बिना unknown — साथ में list, doctor, install और update के निकास और उनके exit कोड, सब executed: false की प्रिंट सीमा में मिलते हैं">
+</picture>
 
 ## तीन चरणों में शुरुआत
 
@@ -215,11 +220,11 @@ node bin/dsh-tools.js list --json                   # रेपो से सी
 | `bin/dsh-tools.js` | npm bin प्रवेश, आर्ग्युमेंट `src/tools.js` को भेजता है |
 | `src/tools.js` | `KNOWN` सूची, आर्ग्युमेंट पार्सिंग और list / doctor / install / update |
 | `test/tools.test.js` | 3 `node:test` केस (list / install / doctor) |
-| `scripts/gen-readme-assets.py` | हल्के/गहरे hero SVG बनाता है (Python + Pillow) |
-| `docs/assets/` | बने हुए `dsh-plugin-tools-flow-{light,dark}.svg` |
+| `scripts/gen-readme-assets.py` | चार hero webp और हल्के/गहरे flow-v5 SVG बनाता है (Python + Pillow) |
+| `docs/assets/` | बने हुए `dsh-plugin-tools-hero-{zh,en}-{light,dark}.webp` और `dsh-plugin-tools-flow-v5-{light,dark}.svg` |
 | `.github/workflows/test.yml` | CI: Node 20 और 24 पर `npm test` |
 
-चित्र [`scripts/gen-readme-assets.py`](scripts/gen-readme-assets.py) से प्रोग्रामेटिक रूप से बनते हैं और कभी भी दोबारा बनाए जा सकते हैं: `python scripts/gen-readme-assets.py`। स्क्रिप्ट शुरू में CJK फ़ॉन्ट खोजती है और न मिलने पर त्रुटि के साथ बंद हो जाती है; दोनों SVG में केवल कमांड टोकन हैं और पाँचों README भाषाएँ उन्हीं को साझा करती हैं।
+चित्र [`scripts/gen-readme-assets.py`](scripts/gen-readme-assets.py) से प्रोग्रामेटिक रूप से बनते हैं और कभी भी दोबारा बनाए जा सकते हैं: `python scripts/gen-readme-assets.py`। स्क्रिप्ट शुरू में msyh.ttc / msyhbd.ttc / consola.ttf खोजती है और कोई न मिलने पर त्रुटि के साथ बंद हो जाती है; hero zh और en संस्करणों में है, जबकि संरचना वाला SVG केवल कमांड टोकन और छोटी चीनी टिप्पणियाँ रखता है और पाँचों README भाषाएँ उसे साझा करती हैं।
 
 ## परिवार और आभार
 

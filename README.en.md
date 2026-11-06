@@ -1,8 +1,8 @@
 <div align="center">
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/dsh-plugin-tools-flow-dark.svg">
-  <img src="docs/assets/dsh-plugin-tools-flow-light.svg" width="100%" alt="dsh-plugin-tools workflow: dsh-tools list finds the tools, dsh-tools doctor checks the environment, dsh-tools install prints an npm i -g command, dsh-tools update prints @latest commands, and you run every command yourself">
+  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/dsh-plugin-tools-hero-en-dark.webp">
+  <img src="docs/assets/dsh-plugin-tools-hero-en-light.webp" width="100%" alt="dsh-plugin-tools: one list for nine known tools — the 3×3 catalog grid marks whether each declares pkg or bin, and the install command below is stamped executed: false — it stops at stdout and never calls npm">
 </picture>
 
 # dsh-plugin-tools
@@ -34,6 +34,11 @@ npx dsh-plugin-tools list   # or run it once without installing
 ## What it is
 
 `dsh-plugin-tools` is the catalog, preflight checker, and install cheat sheet for the DSH plugin developer toolchain. `dsh-tools list` shows the package name, executable name, and role of each of the nine known tools, plus whether it is already installed on this machine; `dsh-tools doctor` checks the four prerequisites Node, npm, dsh, and git; `dsh-tools install <tool>` and `dsh-tools update` print the exact `npm install -g` command to run. It never contacts the npm registry, never writes a file, and does not audit packages, touch the host, or produce scores or rankings.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/dsh-plugin-tools-flow-v5-dark.svg">
+  <img src="docs/assets/dsh-plugin-tools-flow-v5-light.svg" width="100%" alt="dsh-plugin-tools structure: a KNOWN[9] capability matrix with id / pkg / bin / installed columns — installed can only be yes / no, or unknown when bin is null — beside the list, doctor, install and update exits and their exit codes, all draining into the executed: false print boundary">
+</picture>
 
 ## Three-step setup
 
@@ -215,11 +220,11 @@ No build step: pure ESM, with `bin/dsh-tools.js` and `src/tools.js` as the entir
 | `bin/dsh-tools.js` | npm bin entry that forwards arguments to `src/tools.js` |
 | `src/tools.js` | `KNOWN` catalog, argument parsing, and list / doctor / install / update |
 | `test/tools.test.js` | 3 `node:test` cases (list / install / doctor) |
-| `scripts/gen-readme-assets.py` | generates the light/dark hero SVGs (Python + Pillow) |
-| `docs/assets/` | the generated `dsh-plugin-tools-flow-{light,dark}.svg` files |
+| `scripts/gen-readme-assets.py` | generates the four hero webp files and the light/dark flow-v5 SVGs (Python + Pillow) |
+| `docs/assets/` | the generated `dsh-plugin-tools-hero-{zh,en}-{light,dark}.webp` and `dsh-plugin-tools-flow-v5-{light,dark}.svg` |
 | `.github/workflows/test.yml` | CI: runs `npm test` on Node 20 and 24 |
 
-The artwork is generated programmatically by [`scripts/gen-readme-assets.py`](scripts/gen-readme-assets.py) and can be regenerated at any time: `python scripts/gen-readme-assets.py`. The script probes for a CJK font at startup and exits with an error when none is found; the two SVGs contain command tokens only and are shared by all five README languages.
+The artwork is generated programmatically by [`scripts/gen-readme-assets.py`](scripts/gen-readme-assets.py) and can be regenerated at any time: `python scripts/gen-readme-assets.py`. The script probes for msyh.ttc / msyhbd.ttc / consola.ttf at startup and exits with an error when one is missing; the hero comes in zh and en versions, while the structure SVG carries command tokens plus short Chinese notes and is shared by all five README languages.
 
 ## Family & thanks
 

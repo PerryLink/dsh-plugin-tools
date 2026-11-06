@@ -1,177 +1,486 @@
 #!/usr/bin/env python3
-"""Generate README image assets for dsh-plugin-tools (docs/assets/).
+"""README visuals for dsh-plugin-tools — v5 (1440x576 hero + 1100x660 flow).
+
+Everything below is read out of the shipped code, not invented:
+
+  src/tools.js  KNOWN[9] holds { id, pkg, bin, role }. Two fields are nullable
+                on purpose: `standards` has no npm package (pkg: null) and
+                `primer` / `test-drive` declare no executable (bin: null).
+  src/tools.js  hasCommand(bin) runs `where` (win32) or `which` with a 3000 ms
+                timeout; a null bin short-circuits to null, which list() prints
+                as `unknown`.
+                list()    -> all nine rows x probe, text table or --json
+                doctor()  -> four fixed probes (node >=20, npm, dsh, git);
+                             pass / pass-with-warnings / fail; exit 1 on fail
+                install() -> one row matched by id or pkg; pkg null -> exit 1;
+                             otherwise prints `npm install -g <pkg>` and
+                             `executed: false`
+                update()  -> the eight rows with a pkg, `@latest`, executed: false
+  src/tools.js  parse() is strict: unknown option, extra argument or unknown
+                subcommand -> error + usage, exit 1.
+  package.json  zero runtime dependencies, one bin (`dsh-tools`), no config.
+
+  hero  (Pillow, zh/en x light/dark) — a catalog sheet. The right half is a
+        3x3 grid of the nine KNOWN ids; every cell carries two capability chips
+        (pkg / bin) that are filled only when that field is declared, so the
+        hollow chips of primer, test-drive and standards show the capability
+        gap at a glance. Beneath it sits the only output that looks like an
+        action — the printed install command — stamped `executed: false`, and
+        then a dashed boundary: the commands stop at stdout.
+
+  flow  (hand-written SVG, light/dark) — a capability matrix, not a row of
+        boxes: nine rows x (id / pkg / bin / installed). The `installed` column
+        can only hold what the probe can return — `yes / no`, or `unknown` when
+        bin is null. Beside it are the four command exits that read those rows
+        (list reads all nine, install one, update the eight with a pkg; doctor
+        reads KNOWN not at all) with their real exit codes, and one print-only
+        boundary rail that every exit drains into.
+
+Labels are command tokens plus short Chinese notes, so the light/dark SVG pair
+is shared by all five README languages; only the hero carries prose (zh / en).
 
 Outputs (idempotent overwrite):
-  dsh-plugin-tools-flow-light.svg / dsh-plugin-tools-flow-dark.svg
-      Hero toolchain flow diagram. Two hand-written SVG files (vector — never
-      rasterized to webp). Text inside is command-surface tokens only
-      (dsh-tools list, dsh-tools install, npm i -g <pkg>, ...), so all five
-      README languages share the same pair.
+  docs/assets/dsh-plugin-tools-hero-{zh,en}-{light,dark}.webp
+  docs/assets/dsh-plugin-tools-flow-v5-{light,dark}.svg
 
-Run once:  python scripts/gen-readme-assets.py
-Requires:  Pillow (pip install pillow)
+Run:  python scripts/gen-readme-assets.py
+Needs: Pillow, plus msyh.ttc / msyhbd.ttc / consola.ttf (a CJK font is
+       mandatory: Chinese must never render as tofu boxes).
 """
 from __future__ import annotations
 
 import os
-import sys
+from html import escape
 
-from PIL import ImageFont
+from PIL import Image, ImageDraw, ImageFilter, ImageFont
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-OUT = os.path.join(ROOT, "docs", "assets")
+OUT = os.path.join(ROOT, 'docs', 'assets')
 
-# --- palette: PerryLink family (accent) + GitHub page backgrounds ----------
-FAMILY = "#4B67B4"   # family accent (badges use labelColor #2B3245)
-GREEN = {"light": "#16a34a", "dark": "#3fb950"}
+FONT_CJK = r'C:\Windows\Fonts\msyh.ttc'
+FONT_CJK_BOLD = r'C:\Windows\Fonts\msyhbd.ttc'
+FONT_MONO = r'C:\Windows\Fonts\consola.ttf'
+for _p in (FONT_CJK, FONT_CJK_BOLD, FONT_MONO):
+    if not os.path.exists(_p):
+        raise SystemExit(f'FATAL: font missing: {_p}  (CJK must never render '
+                         f'as tofu boxes; install the font and re-run)')
+
+KIND = {'cjk': FONT_CJK, 'cjk_bold': FONT_CJK_BOLD, 'mono': FONT_MONO}
+
+# --- palette: family accent + the two mandated page gradients ---------------
 SKIN = {
-    "light": dict(bg="#ffffff", box="#f6f8fa", border="#d0d7de",
-                  text="#1f2328", sub="#57606a"),
-    "dark": dict(bg="#0d1117", box="#161b22", border="#30363d",
-                 text="#f0f6fc", sub="#8b949e"),
+    'light': dict(bg_from='#f9f6fd', bg_to='#e4eaf8', card='#ffffff',
+                  card_edge='#e4e1ee', zone='#f7f5fc', text='#141419',
+                  sub='#4d5261', faint='#8f94a4', accent='#4B67B4',
+                  accent2='#6d80c4', ok='#16a34a', warn='#bc4c00',
+                  fail='#cf222e', pill='#ece7f9', grid='#e7e4f0',
+                  shadow=(32, 26, 64), flood='#a9b3d6'),
+    'dark': dict(bg_from='#131a2a', bg_to='#0c1016', card='#1b2231',
+                 card_edge='#2e374b', zone='#202839', text='#f0f3f9',
+                 sub='#a8b1c4', faint='#737b8d', accent='#8496f5',
+                 accent2='#a9b7f8', ok='#3fb950', warn='#d29922',
+                 fail='#f85149', pill='#242d42', grid='#2a3348',
+                 shadow=(0, 0, 0), flood='#000000'),
 }
 
-# --- CJK font probe: localized hero variants must never render as tofu -----
-# The shipped SVGs are token-only ASCII, but the probe keeps this script safe
-# to extend with Chinese labels later (and matches the family asset skeleton).
-FONT_CANDIDATES = [
-    r"C:\Windows\Fonts\msyh.ttc",      # Microsoft YaHei
-    r"C:\Windows\Fonts\simhei.ttf",    # SimHei
-    r"C:\Windows\Fonts\Deng.ttf",      # DengXian
-    "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",
-    "/System/Library/Fonts/PingFang.ttc",
+# id, pkg, bin — exactly src/tools.js KNOWN (order preserved).
+CATALOG = [
+    ('start', 'dsh-plugin-start', 'dsh-start'),
+    ('ready', 'dsh-plugin-ready', 'dsh-ready'),
+    ('dev', 'dsh-plugin-dev', 'dsh-dev'),
+    ('tools', 'dsh-plugin-tools', 'dsh-tools'),
+    ('primer', 'dsh-primer', None),
+    ('clinic', 'dsh-clinic', 'dsh-clinic'),
+    ('test-drive', 'dsh-test-drive', None),
+    ('codemod', 'dsh-codemod', 'dsh-codemod'),
+    ('standards', None, None),
 ]
-FONT_PATH = next((p for p in FONT_CANDIDATES if os.path.exists(p)), None)
-if FONT_PATH is None:
-    sys.exit("FATAL: no CJK font found (looked for msyh.ttc, simhei.ttf, "
-             "Deng.ttf, Noto Sans CJK, PingFang). Refusing to render Chinese "
-             "as tofu boxes; install one of the probed fonts and re-run.")
 
 
-def font(size: int) -> ImageFont.FreeTypeFont:
-    return ImageFont.truetype(FONT_PATH, size)
+def font(size: float, kind: str = 'cjk') -> ImageFont.FreeTypeFont:
+    return ImageFont.truetype(KIND[kind], int(round(size)))
+
+
+def hx(s: str) -> tuple[int, int, int]:
+    s = s.lstrip('#')
+    return tuple(int(s[i:i + 2], 16) for i in (0, 2, 4))
+
+
+def gradient(w: int, h: int, c1: str, c2: str) -> Image.Image:
+    img = Image.new('RGB', (w, h))
+    d = ImageDraw.Draw(img)
+    for y in range(h):
+        t = 0.2 * (y / h) + 0.8 * (y / h) ** 1.5
+        d.line([(0, y), (w, y)],
+               fill=tuple(int(p + (q - p) * t)
+                          for p, q in zip(hx(c1), hx(c2))))
+    return img
+
+
+def glow(img: Image.Image, cx: int, cy: int, r: int, color,
+         alpha: int = 24) -> Image.Image:
+    layer = Image.new('RGBA', img.size, (0, 0, 0, 0))
+    d = ImageDraw.Draw(layer)
+    for i in range(9, 0, -1):
+        rr = r * i / 9
+        d.ellipse([cx - rr, cy - rr, cx + rr, cy + rr],
+                  fill=color + (int(alpha * (1 - i / 10)),))
+    return Image.alpha_composite(img.convert('RGBA'), layer).convert('RGB')
+
+
+def card(img: Image.Image, box, skin: dict, radius: int = 20, shadow: int = 14,
+         fill: str | None = None, edge: str | None = None,
+         width: int = 2) -> Image.Image:
+    """Rounded card with a soft offset shadow."""
+    x0, y0, x1, y1 = box
+    sh = Image.new('RGBA', img.size, (0, 0, 0, 0))
+    sd = ImageDraw.Draw(sh)
+    for i in range(shadow, 0, -2):
+        sd.rounded_rectangle([x0 - i // 4, y0 + i // 2, x1 + i // 4, y1 + i],
+                             radius=radius + i // 4,
+                             fill=skin['shadow'] + (int(6 * (1 - i / shadow)),))
+    base = Image.alpha_composite(img.convert('RGBA'),
+                                 sh.filter(ImageFilter.GaussianBlur(10)))
+    d = ImageDraw.Draw(base)
+    d.rounded_rectangle(box, radius=radius, fill=hx(fill or skin['card']),
+                        outline=hx(edge or skin['card_edge']), width=width)
+    return base.convert('RGB')
+
+
+def pill(img: Image.Image, xy, text: str, skin: dict, size: int = 17,
+         fg: str | None = None, bg: str | None = None) -> Image.Image:
+    d = ImageDraw.Draw(img)
+    f = font(size, 'cjk')
+    tw = d.textlength(text, font=f)
+    x, y = xy
+    h = size + 16
+    d.rounded_rectangle([x, y, x + tw + 28, y + h], radius=h // 2,
+                        fill=hx(bg or skin['pill']))
+    d.text((x + 14, y + 7), text, font=f, fill=hx(fg or skin['accent']))
+    return img
+
+
+def assure(d, text: str, f, limit: float, label: str) -> None:
+    w = d.textlength(text, font=f)
+    if w > limit:
+        raise SystemExit(f'FATAL: {label} overflows ({w:.0f}px > {limit:.0f}px):'
+                         f' {text!r}')
 
 
 # ---------------------------------------------------------------------------
-# 1. Hero toolchain flow SVG (light + dark)
+# hero copy — only prose is localised; the right-hand labels are tokens
 # ---------------------------------------------------------------------------
-# Two lanes. Each node is (label, subtitle, accent): the label is a command
-# token, the subtitle is a shorter token fragment. "<tool>" / "<pkg>" are
-# escaped because the SVG is XML.
-TOP_NODES = [
-    ("dsh-tools list", "tools \u00b7 installed", "border"),
-    ("dsh-tools doctor", "node \u00b7 npm \u00b7 dsh \u00b7 git", "border"),
-    ("dsh-tools install", "&lt;tool&gt; \u2192 npm i -g", "family"),
-    ("npm i -g &lt;pkg&gt;", "executed by you", "green"),
-]
-BOTTOM_NODES = [
-    ("dsh-tools update", "\u2192 npm i -g @latest", "family"),
-    ("npm i -g &lt;pkg&gt;@latest", "executed by you", "green"),
-]
+HERO = {
+    'zh': dict(
+        kicker='DSH 插件工具链 · 目录与体检',
+        value=['九个工具，一张清单', '谁装了、缺什么、敲哪条'],
+        sub=['list 列出九个工具的 pkg/bin/职责与本机状态；',
+             'doctor 只探 Node、npm、dsh、git 四项前提；',
+             'install 与 update 只打印命令，绝不执行。'],
+        meta='无配置文件 · 零依赖 · 零网络 · Node ≥24.9.0 · exit 0/1',
+        foot='Apache-2.0 · 社区工具，与 DeepSeek 官方无关',
+        note='实心 = 已声明 · 空心 = 缺省 · 缺 bin → unknown',
+        caption='命令只写到 stdout：npm 从不被调用 · 不联网 · 不写文件',
+    ),
+    'en': dict(
+        kicker='DSH plugin toolchain · catalog & preflight',
+        value=['Nine tools, one list', 'installed, missing, next command'],
+        sub=["list: nine tools' pkg / bin / role and install state;",
+             'doctor: Node, npm, dsh, git — four local probes;',
+             'install / update: print the command, never run it.'],
+        meta='no config · 0 deps · 0 network · Node >=24.9.0 · exit 0/1',
+        foot='Apache-2.0 · community tool, not affiliated with DeepSeek',
+        note='filled = declared · hollow = absent · no bin = unknown',
+        caption='commands stop at stdout: npm is never called — no network, no writes',
+    ),
+}
 
 
-def accent_color(kind: str, skin: str) -> str:
-    if kind == "green":
-        return GREEN[skin]
-    if kind == "family":
-        return FAMILY
-    return SKIN[skin]["border"]
+def hero(lang: str, skin: str) -> Image.Image:
+    s = SKIN[skin]
+    c = HERO[lang]
+    W, H = 1440, 576
+    img = gradient(W, H, s['bg_from'], s['bg_to'])
+    img = glow(img, 1210, 60, 360, hx(s['accent']),
+              20 if skin == 'light' else 34)
+    img = glow(img, 120, 560, 280, hx(s['accent']),
+              8 if skin == 'light' else 16)
+    m = 60
+
+    # ---- left column: kicker / title / two value lines / sub / meta / foot --
+    img = pill(img, (m, 46), c['kicker'], s, size=17)
+    d = ImageDraw.Draw(img)
+
+    title_f = font(80, 'mono')
+    assure(d, 'dsh-plugin-tools', title_f, 712, 'title')
+    d.text((m - 2, 94), 'dsh-plugin-tools', font=title_f, fill=hx(s['text']))
+
+    value_f = font(38, 'cjk_bold')
+    for i, line in enumerate(c['value']):
+        assure(d, line, value_f, 700, f'value[{i}]')
+        d.text((m, 220 + i * 58), line, font=value_f, fill=hx(s['text']))
+
+    sub_f = font(25, 'cjk')
+    for i, line in enumerate(c['sub']):
+        assure(d, line, sub_f, 700, f'sub[{i}]')
+        d.text((m + 1, 348 + i * 34), line, font=sub_f, fill=hx(s['sub']))
+
+    d.text((m + 1, 464), c['meta'], font=font(20, 'cjk'), fill=hx(s['faint']))
+    d.line([m + 1, 498, 640, 498], fill=hx(s['grid']), width=2)
+    d.text((m + 1, 512), c['foot'], font=font(18, 'cjk'), fill=hx(s['faint']))
+
+    # ---- right column: the nine-tool catalog grid -------------------------
+    RX = 800
+    img = card(img, (RX, 58, 1390, 386), s, radius=22)
+    d = ImageDraw.Draw(img)
+    d.text((RX + 24, 72), 'KNOWN · 9', font=font(20, 'cjk_bold'),
+           fill=hx(s['accent']))
+    d.text((1390 - 24, 76), 'src/tools.js', font=font(17, 'mono'),
+           fill=hx(s['faint']), anchor='ra')
+    d.line([RX + 24, 106, 1390 - 24, 106], fill=hx(s['grid']), width=1)
+
+    cw, ch, gap = 170, 66, 13
+    gx, gy = RX + 24, 120
+    for i, (tid, pkg, bin_) in enumerate(CATALOG):
+        col, row = i % 3, i // 3
+        x = gx + col * (cw + gap)
+        y = gy + row * (ch + 10)
+        d.rounded_rectangle([x, y, x + cw, y + ch], radius=14,
+                            fill=hx(s['zone']), outline=hx(s['card_edge']),
+                            width=1)
+        d.text((x + 14, y + 6), tid, font=font(20, 'mono'),
+               fill=hx(s['text']))
+        # capability chips: filled when the field is declared, hollow if not
+        chip_f = font(15, 'mono')
+        for j, (label, declared) in enumerate((('pkg', pkg is not None),
+                                               ('bin', bin_ is not None))):
+            cx = x + 14 + j * 51
+            cy = y + 35
+            wdt = int(d.textlength(label, font=chip_f)) + 20
+            if declared:
+                d.rounded_rectangle([cx, cy, cx + wdt, cy + 21], radius=11,
+                                    fill=hx(s['pill']))
+                d.text((cx + 10, cy + 2), label, font=chip_f,
+                       fill=hx(s['accent']))
+            else:
+                d.rounded_rectangle([cx, cy, cx + wdt, cy + 21], radius=11,
+                                    outline=hx(s['faint']), width=1)
+                d.text((cx + 10, cy + 2), label, font=chip_f,
+                       fill=hx(s['faint']))
+
+    assure(d, c['note'], font(16, 'cjk'), 554, 'note')
+    d.text((RX + 24, 348), c['note'], font=font(16, 'cjk'), fill=hx(s['faint']))
+
+    # ---- the only action-shaped output: a printed command, stamped ---------
+    img = card(img, (RX, 400, 1390, 502), s, radius=20)
+    d = ImageDraw.Draw(img)
+    d.text((RX + 24, 412), '$ dsh-tools install ready', font=font(18, 'mono'),
+           fill=hx(s['text']))
+    d.text((RX + 24, 438), 'npm install -g dsh-plugin-ready',
+           font=font(18, 'mono'), fill=hx(s['accent']))
+    d.text((RX + 24, 466), '(not executed by dsh-tools; run it yourself)',
+           font=font(15, 'mono'), fill=hx(s['faint']))
+
+    stamp = 'executed: false'
+    d.rounded_rectangle([1390 - 24 - 148, 410, 1390 - 24, 438], radius=14,
+                        fill=hx(s['pill']))
+    d.text((1390 - 24 - 74, 424), stamp, font=font(15, 'mono'),
+           fill=hx(s['accent']), anchor='mm')
+
+    # ---- print boundary: a dashed line, nothing crosses it -----------------
+    x = RX
+    while x + 10 <= 1390:
+        d.line([x, 522, x + 10, 522], fill=hx(s['accent']), width=2)
+        x += 19
+    d.text((RX + 24, 532), c['caption'], font=font(16, 'cjk'),
+           fill=hx(s['accent']))
+    return img
+
+
+# ---------------------------------------------------------------------------
+# flow: capability matrix -> four command exits -> one print-only boundary
+# ---------------------------------------------------------------------------
+SANS = ("'Segoe UI','Microsoft YaHei','PingFang SC','Noto Sans CJK SC',"
+        "system-ui,sans-serif")
+MONO = "'Consolas','SFMono-Regular',ui-monospace,monospace"
+
+
+def est(text: str, size: float, mono: bool = False) -> float:
+    w = 0.0
+    for ch in text:
+        if ord(ch) >= 0x2E80:          # CJK ideographs + full-width punct
+            w += size
+        elif ch in '→←↑↓⊣—·≥≤':
+            w += size * 0.8
+        else:
+            w += size * (0.55 if mono else 0.5)
+    return w
+
+
+def guard(text, size, limit, mono, label):
+    w = est(text, size, mono)
+    if w > limit:
+        raise SystemExit(f'FATAL: flow {label} overflows ({w:.0f}px > '
+                         f'{limit:.0f}px): {text!r}')
+
+
+def svg_text(x, y, s, size, fill, weight='400', anchor='start', mono=False):
+    fam = MONO if mono else SANS
+    return (f'<text x="{x}" y="{y}" font-family="{fam}" font-size="{size}" '
+            f'font-weight="{weight}" fill="{fill}" '
+            f'text-anchor="{anchor}">{escape(s)}</text>')
 
 
 def flow_svg(skin: str) -> str:
     s = SKIN[skin]
-    w, h = 1200, 460
-    parts = [
-        f'<svg xmlns="http://www.w3.org/2000/svg" width="{w}" height="{h}" '
-        f'viewBox="0 0 {w} {h}" role="img" '
-        f'aria-label="dsh-plugin-tools command flow">',
-        '<title>dsh-plugin-tools command flow</title>',
-        f'<rect width="{w}" height="{h}" rx="18" fill="{s["bg"]}"/>',
-        f'<text x="60" y="62" fill="{s["text"]}" font-family="ui-sans-serif,'
-        f'system-ui,sans-serif" font-size="30" font-weight="700">'
-        f'dsh-plugin-tools</text>',
-        f'<text x="60" y="94" fill="{s["sub"]}" font-family="ui-monospace,'
-        f'monospace" font-size="16">dsh-tools list \u00b7 doctor \u00b7 '
-        f'install \u00b7 update</text>',
-        f'<line x1="60" y1="116" x2="1140" y2="116" stroke="{s["border"]}"/>',
+    W, H = 1100, 660
+    p: list[str] = []
+    add = p.append
+
+    add(f'<svg xmlns="http://www.w3.org/2000/svg" width="{W}" height="{H}" '
+        f'viewBox="0 0 {W} {H}" role="img" '
+        f'aria-label="dsh-plugin-tools structure: a nine-row capability matrix '
+        f'beside four command exits, all ending at a print-only boundary">')
+    add('<title>dsh-plugin-tools — KNOWN[9] capability matrix and '
+        'print-only boundary</title>')
+    add('<defs>')
+    add('<linearGradient id="bg" x1="0" y1="0" x2="0.35" y2="1">'
+        f'<stop offset="0" stop-color="{s["bg_from"]}"/>'
+        f'<stop offset="1" stop-color="{s["bg_to"]}"/></linearGradient>')
+    op = '0.10' if skin == 'light' else '0.45'
+    add(f'<filter id="sh" x="-20%" y="-20%" width="140%" height="140%">'
+        f'<feDropShadow dx="0" dy="6" stdDeviation="9" flood-color="'
+        f'{s["flood"]}" flood-opacity="{op}"/></filter>')
+    add('</defs>')
+    add(f'<rect width="{W}" height="{H}" rx="18" fill="url(#bg)"/>')
+    add('<g>')
+
+    # ---- header ------------------------------------------------------------
+    add(svg_text(48, 62, 'dsh-tools · src/tools.js · KNOWN[9] · parse(argv) · '
+                         'hasCommand()', 14, s['faint'], mono=True))
+    add(svg_text(48, 102, '九个工具的能力矩阵，四条命令的打印出口', 24, s['text'],
+                 '700'))
+    sub = ('pkg / bin 是否声明决定行为：无 pkg 不可安装，无 bin 只能 unknown；'
+           '所有出口都停在打印边界。')
+    guard(sub, 15, 780, False, 'sub')
+    add(svg_text(48, 132, sub, 15, s['sub']))
+
+    # schema chip (the fixed --json contract) + argv note
+    add(f'<rect x="846" y="44" width="218" height="36" rx="18" '
+        f'fill="{s["card"]}" stroke="{s["card_edge"]}" stroke-width="1.5"/>')
+    add(svg_text(955, 68, 'schema dsh-plugin-tools/1', 14, s['accent'],
+                 '700', 'middle', mono=True))
+    add(svg_text(1064, 102, 'argv → 4 verbs + --json', 14, s['faint'],
+                 anchor='end'))
+
+    # ---- capability matrix -------------------------------------------------
+    add(f'<rect x="36" y="150" width="664" height="434" rx="20" '
+        f'fill="{s["card"]}" stroke="{s["card_edge"]}" stroke-width="1.5" '
+        f'filter="url(#sh)"/>')
+    add(svg_text(56, 176, 'KNOWN[9] · pkg / bin 决定行为', 14, s['accent'], '700'))
+    add(svg_text(680, 176, 'role 只进输出', 14, s['faint'], anchor='end'))
+
+    for x, label, anchor in ((58, 'id', 'start'), (170, 'pkg', 'start'),
+                             (396, 'bin', 'start'), (560, 'installed', 'start')):
+        add(svg_text(x, 206, label, 15, s['faint'], '600', anchor))
+    add(f'<line x1="48" y1="216" x2="688" y2="216" stroke="{s["grid"]}" '
+        f'stroke-width="1.5"/>')
+
+    for i, (tid, pkg, bin_) in enumerate(CATALOG):
+        top = 222 + i * 34
+        if i % 2 == 0:
+            add(f'<rect x="48" y="{top}" width="640" height="34" rx="8" '
+                f'fill="{s["zone"]}"/>')
+        base = top + 23
+        add(svg_text(58, base, tid, 17, s['text'], '700', mono=True))
+        add(svg_text(170, base, pkg or '—', 17,
+                     s['sub'] if pkg else s['faint'], mono=True))
+        add(svg_text(396, base, bin_ or '—', 17,
+                     s['sub'] if bin_ else s['faint'], mono=True))
+        if bin_:
+            add(svg_text(560, base, 'yes / no', 17, s['sub'], mono=True))
+        else:
+            add(svg_text(560, base, 'unknown', 17, s['faint'], mono=True))
+
+    n1 = 'installed = hasCommand(bin) → where|which（3s）：yes / no，无 bin → unknown'
+    n2 = 'role 只进 stdout；无 pkg（standards）→ install 拒绝、update 跳过'
+    guard(n1, 14, 640, False, 'footnote1')
+    guard(n2, 14, 640, False, 'footnote2')
+    add(svg_text(56, 552, n1, 14, s['faint']))
+    add(svg_text(56, 572, n2, 14, s['faint']))
+
+    # ---- four command exits ------------------------------------------------
+    add(f'<rect x="724" y="150" width="340" height="434" rx="20" '
+        f'fill="{s["card"]}" stroke="{s["card_edge"]}" stroke-width="1.5" '
+        f'filter="url(#sh)"/>')
+    add(svg_text(744, 176, '四条命令 · 四种出口', 14, s['accent'], '700'))
+
+    EXITS = [
+        ('list', '全量 9 行 + 探测', 'text 表格 · --json', '0'),
+        ('doctor', '不读 KNOWN · 4 项探测', 'pass / pass-with-warnings / fail',
+         '0 | 1'),
+        ('install', 'id 或 pkg 命中 1 行', 'npm install -g <pkg>', '0 | 1'),
+        ('update', '有 pkg 的 8 行', 'npm install -g <pkg>@latest', '0'),
     ]
-    # top-right token badge
-    parts.append(
-        f'<rect x="1018" y="40" width="122" height="34" rx="17" '
-        f'fill="{s["box"]}" stroke="{FAMILY}" stroke-width="2"/>')
-    parts.append(
-        f'<text x="1079" y="62" fill="{FAMILY}" text-anchor="middle" '
-        f'font-family="ui-monospace,monospace" font-size="13" '
-        f'font-weight="700">print-only</text>')
+    for i, (verb, what, out, code) in enumerate(EXITS):
+        top = 196 + i * 92
+        add(svg_text(744, top + 22, verb, 19, s['accent'], '700', mono=True))
+        add(svg_text(1044, top + 22, f'exit {code}', 14,
+                     s['sub'] if code == '0' else s['warn'], '600', 'end',
+                     mono=True))
+        add(svg_text(744, top + 50, what, 15, s['sub']))
+        add(svg_text(744, top + 72, out, 14,
+                     s['accent2'] if i in (2, 3) else s['faint'], mono=True))
+        if i < 3:
+            add(f'<line x1="744" y1="{top + 88}" x2="1044" y2="{top + 88}" '
+                f'stroke="{s["grid"]}" stroke-width="1"/>')
 
-    # --- top lane: discover -> diagnose -> install guidance -> run ---------
-    y0, nh, nw, gap = 150, 96, 240, 40
-    for i, (label, sub, kind) in enumerate(TOP_NODES):
-        x = 60 + i * (nw + gap)
-        parts.append(
-            f'<rect x="{x}" y="{y0}" width="{nw}" height="{nh}" rx="14" '
-            f'fill="{s["box"]}" stroke="{accent_color(kind, skin)}" '
-            f'stroke-width="2"/>')
-        parts.append(
-            f'<text x="{x + nw // 2}" y="{y0 + 40}" fill="{s["text"]}" '
-            f'text-anchor="middle" font-family="ui-monospace,monospace" '
-            f'font-size="16" font-weight="700">{label}</text>')
-        parts.append(
-            f'<text x="{x + nw // 2}" y="{y0 + 68}" fill="{s["sub"]}" '
-            f'text-anchor="middle" font-family="ui-monospace,monospace" '
-            f'font-size="12">{sub}</text>')
-        if i < len(TOP_NODES) - 1:
-            ax, ay = x + nw + 4, y0 + nh // 2
-            parts.append(
-                f'<path d="M{ax} {ay}h{gap - 12}" stroke="{s["sub"]}" '
-                f'stroke-width="3"/>')
-            parts.append(
-                f'<path d="M{ax + gap - 14} {ay - 7}l10 7-10 7" fill="none" '
-                f'stroke="{s["sub"]}" stroke-width="3" '
-                f'stroke-linecap="round" stroke-linejoin="round"/>')
+    # ---- both halves drain into the print boundary ------------------------
+    for x in (368, 894):
+        add(f'<path d="M{x} 586V591" stroke="{s["accent"]}" stroke-width="2" '
+            f'stroke-dasharray="4 3"/>')
+        add(f'<path d="M{x - 5} 590L{x} 597L{x + 5} 590" fill="none" '
+            f'stroke="{s["accent"]}" stroke-width="2" stroke-linecap="round" '
+            f'stroke-linejoin="round"/>')
 
-    # --- bottom lane: update guidance -> run -------------------------------
-    by, bh, bw, bgap = 310, 84, 280, 60
-    for i, (label, sub, kind) in enumerate(BOTTOM_NODES):
-        x = 290 + i * (bw + bgap)
-        parts.append(
-            f'<rect x="{x}" y="{by}" width="{bw}" height="{bh}" rx="14" '
-            f'fill="{s["box"]}" stroke="{accent_color(kind, skin)}" '
-            f'stroke-width="2"/>')
-        parts.append(
-            f'<text x="{x + bw // 2}" y="{by + 34}" fill="{s["text"]}" '
-            f'text-anchor="middle" font-family="ui-monospace,monospace" '
-            f'font-size="16" font-weight="700">{label}</text>')
-        parts.append(
-            f'<text x="{x + bw // 2}" y="{by + 60}" fill="{s["sub"]}" '
-            f'text-anchor="middle" font-family="ui-monospace,monospace" '
-            f'font-size="12">{sub}</text>')
-        if i < len(BOTTOM_NODES) - 1:
-            ax, ay = x + bw + 4, by + bh // 2
-            parts.append(
-                f'<path d="M{ax} {ay}h{bgap - 12}" stroke="{s["sub"]}" '
-                f'stroke-width="3"/>')
-            parts.append(
-                f'<path d="M{ax + bgap - 14} {ay - 7}l10 7-10 7" fill="none" '
-                f'stroke="{s["sub"]}" stroke-width="3" '
-                f'stroke-linecap="round" stroke-linejoin="round"/>')
+    add(f'<rect x="36" y="598" width="1028" height="34" rx="17" '
+        f'fill="{s["pill"]}" stroke="{s["accent"]}" stroke-width="1.5" '
+        f'stroke-dasharray="8 5"/>')
+    add(f'<rect x="48" y="604" width="93" height="22" rx="11" '
+        f'fill="{s["accent"]}"/>')
+    add(svg_text(94.5, 619, 'print only', 14,
+                 '#ffffff' if skin == 'light' else '#131a2a', '700', 'middle',
+                 mono=True))
+    rail = '输出只有文本 / JSON · executed 恒为 false'
+    guard(rail, 15, 380, False, 'rail')
+    add(svg_text(154, 620, rail, 15, s['sub']))
+    add(svg_text(1052, 620, 'npm 从不被调用 · 不联网 · 不写文件', 14, s['sub'],
+                 anchor='end'))
 
-    parts.append(
-        f'<text x="60" y="432" fill="{s["sub"]}" font-family="ui-monospace,'
-        f'monospace" font-size="13">--json \u00b7 schema '
-        f'dsh-plugin-tools/1 \u00b7 no network \u00b7 no writes</text>')
-    parts.append('</svg>')
-    return "\n".join(parts) + "\n"
+    # ---- footer ------------------------------------------------------------
+    add(svg_text(48, 648, '未知子命令 / 未知选项 / 多余参数 → exit 1 并打印用法',
+                 14, s['faint']))
+    add(svg_text(1052, 648, '无配置文件 · 零运行时依赖 · Node ≥24.9.0', 14,
+                 s['faint'], anchor='end'))
+    add('</g></svg>')
+    return '\n'.join(p) + '\n'
 
 
 def main() -> None:
     os.makedirs(OUT, exist_ok=True)
-    for skin in ("light", "dark"):
-        with open(os.path.join(OUT, f"dsh-plugin-tools-flow-{skin}.svg"),
-                  "w", encoding="utf-8", newline="\n") as fh:
-            fh.write(flow_svg(skin))
-    print("wrote 2 SVG assets to docs/assets/")
+    for skin in ('light', 'dark'):
+        svg = flow_svg(skin)
+        path = os.path.join(OUT, f'dsh-plugin-tools-flow-v5-{skin}.svg')
+        with open(path, 'w', encoding='utf-8', newline='\n') as fh:
+            fh.write(svg)
+    for lang in ('zh', 'en'):
+        for skin in ('light', 'dark'):
+            img = hero(lang, skin)
+            path = os.path.join(
+                OUT, f'dsh-plugin-tools-hero-{lang}-{skin}.webp')
+            img.save(path, 'WEBP', quality=92, method=6)
+    print('wrote 4 webp + 2 svg to docs/assets/')
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()
