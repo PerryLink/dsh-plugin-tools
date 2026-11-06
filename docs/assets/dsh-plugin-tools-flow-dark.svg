@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="460" viewBox="0 0 1200 460" role="img" aria-label="dsh-plugin-tools command flow">
+<title>dsh-plugin-tools command flow</title>
+<rect width="1200" height="460" rx="18" fill="#0d1117"/>
+<text x="60" y="62" fill="#f0f6fc" font-family="ui-sans-serif,system-ui,sans-serif" font-size="30" font-weight="700">dsh-plugin-tools</text>
+<text x="60" y="94" fill="#8b949e" font-family="ui-monospace,monospace" font-size="16">dsh-tools list · doctor · install · update</text>
+<line x1="60" y1="116" x2="1140" y2="116" stroke="#30363d"/>
+<rect x="1018" y="40" width="122" height="34" rx="17" fill="#161b22" stroke="#4B67B4" stroke-width="2"/>
+<text x="1079" y="62" fill="#4B67B4" text-anchor="middle" font-family="ui-monospace,monospace" font-size="13" font-weight="700">print-only</text>
+<rect x="60" y="150" width="240" height="96" rx="14" fill="#161b22" stroke="#30363d" stroke-width="2"/>
+<text x="180" y="190" fill="#f0f6fc" text-anchor="middle" font-family="ui-monospace,monospace" font-size="16" font-weight="700">dsh-tools list</text>
+<text x="180" y="218" fill="#8b949e" text-anchor="middle" font-family="ui-monospace,monospace" font-size="12">tools · installed</text>
+<path d="M304 198h28" stroke="#8b949e" stroke-width="3"/>
+<path d="M330 191l10 7-10 7" fill="none" stroke="#8b949e" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="340" y="150" width="240" height="96" rx="14" fill="#161b22" stroke="#30363d" stroke-width="2"/>
+<text x="460" y="190" fill="#f0f6fc" text-anchor="middle" font-family="ui-monospace,monospace" font-size="16" font-weight="700">dsh-tools doctor</text>
+<text x="460" y="218" fill="#8b949e" text-anchor="middle" font-family="ui-monospace,monospace" font-size="12">node · npm · dsh · git</text>
+<path d="M584 198h28" stroke="#8b949e" stroke-width="3"/>
+<path d="M610 191l10 7-10 7" fill="none" stroke="#8b949e" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="620" y="150" width="240" height="96" rx="14" fill="#161b22" stroke="#4B67B4" stroke-width="2"/>
+<text x="740" y="190" fill="#f0f6fc" text-anchor="middle" font-family="ui-monospace,monospace" font-size="16" font-weight="700">dsh-tools install</text>
+<text x="740" y="218" fill="#8b949e" text-anchor="middle" font-family="ui-monospace,monospace" font-size="12">&lt;tool&gt; → npm i -g</text>
+<path d="M864 198h28" stroke="#8b949e" stroke-width="3"/>
+<path d="M890 191l10 7-10 7" fill="none" stroke="#8b949e" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="900" y="150" width="240" height="96" rx="14" fill="#161b22" stroke="#3fb950" stroke-width="2"/>
+<text x="1020" y="190" fill="#f0f6fc" text-anchor="middle" font-family="ui-monospace,monospace" font-size="16" font-weight="700">npm i -g &lt;pkg&gt;</text>
+<text x="1020" y="218" fill="#8b949e" text-anchor="middle" font-family="ui-monospace,monospace" font-size="12">executed by you</text>
+<rect x="290" y="310" width="280" height="84" rx="14" fill="#161b22" stroke="#4B67B4" stroke-width="2"/>
+<text x="430" y="344" fill="#f0f6fc" text-anchor="middle" font-family="ui-monospace,monospace" font-size="16" font-weight="700">dsh-tools update</text>
+<text x="430" y="370" fill="#8b949e" text-anchor="middle" font-family="ui-monospace,monospace" font-size="12">→ npm i -g @latest</text>
+<path d="M574 352h48" stroke="#8b949e" stroke-width="3"/>
+<path d="M620 345l10 7-10 7" fill="none" stroke="#8b949e" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="630" y="310" width="280" height="84" rx="14" fill="#161b22" stroke="#3fb950" stroke-width="2"/>
+<text x="770" y="344" fill="#f0f6fc" text-anchor="middle" font-family="ui-monospace,monospace" font-size="16" font-weight="700">npm i -g &lt;pkg&gt;@latest</text>
+<text x="770" y="370" fill="#8b949e" text-anchor="middle" font-family="ui-monospace,monospace" font-size="12">executed by you</text>
+<text x="60" y="432" fill="#8b949e" font-family="ui-monospace,monospace" font-size="13">--json · schema dsh-plugin-tools/1 · no network · no writes</text>
+</svg>
