@@ -42,6 +42,11 @@ npx dsh-plugin-tools list   # or run it once without installing
 
 ## Three-step setup
 
+
+![dsh-plugin-tools: real terminal run](docs/assets/dsh-plugin-tools-demo.gif)
+
+*Animated replay of a real run in this repository (2026-11-21).*
+
 1. **Install** (requires Node ≥24.9.0, per `engines.node` in `package.json`):
 
    ```sh

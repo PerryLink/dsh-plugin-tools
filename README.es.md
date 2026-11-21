@@ -40,6 +40,11 @@ npx dsh-plugin-tools list   # o ejecútalo una vez sin instalar
   <img src="docs/assets/dsh-plugin-tools-flow-v5-light.svg" width="100%" alt="Estructura de dsh-plugin-tools: una matriz de capacidades KNOWN[9] con las columnas id / pkg / bin / installed — installed solo puede ser yes / no, o unknown cuando falta bin — junto a las salidas list, doctor, install y update con sus códigos de salida, todas desembocando en el límite de impresión executed: false">
 </picture>
 
+![dsh-plugin-tools: ejecución real de terminal](docs/assets/dsh-plugin-tools-demo.gif)
+
+*Repetición animada de una ejecución real de este repositorio (2026-11-21).*
+
+
 ## Instalación en tres pasos
 
 1. **Instalar** (requiere Node ≥24.9.0, según `engines.node` de `package.json`):

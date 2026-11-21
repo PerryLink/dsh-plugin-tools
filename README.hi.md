@@ -40,6 +40,11 @@ npx dsh-plugin-tools list   # या बिना इंस्टॉल कि�
   <img src="docs/assets/dsh-plugin-tools-flow-v5-light.svg" width="100%" alt="dsh-plugin-tools की संरचना: KNOWN[9] क्षमता मैट्रिक्स — id / pkg / bin / installed; installed केवल yes / no हो सकता है, या bin के बिना unknown — साथ में list, doctor, install और update के निकास और उनके exit कोड, सब executed: false की प्रिंट सीमा में मिलते हैं">
 </picture>
 
+![dsh-plugin-tools का असली टर्मिनल रन](docs/assets/dsh-plugin-tools-demo.gif)
+
+*इस रिपॉज़िटरी के असली रन का एनिमेटेड रीप्ले (2026-11-21)।*
+
+
 ## तीन चरणों में शुरुआत
 
 1. **इंस्टॉल करें** (Node ≥24.9.0 आवश्यक, `package.json` के `engines.node` के अनुसार):

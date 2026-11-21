@@ -42,6 +42,11 @@ npx dsh-plugin-tools list   # 或者不安装，临时跑一次
 
 ## 三步上手
 
+
+![dsh-plugin-tools 真实终端运行](docs/assets/dsh-plugin-tools-demo.gif)
+
+*本仓库真实运行的动图回放（2026-11-21）。*
+
 1. **安装**（前置要求：Node ≥24.9.0，见 `package.json` 的 `engines.node`）：
 
    ```sh
